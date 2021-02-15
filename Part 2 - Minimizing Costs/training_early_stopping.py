@@ -21,7 +21,7 @@ rn.seed(12345)
 # CONFIGURACIÓN DE LOS PARÁMETROS 
 epsilon = 0.3
 number_actions = 5
-direction_boundary = (number_actions -1)/2
+direction_boundary = (number_actions -1)/2  # Indicará si enfriaremos o calentaremos
 number_epochs = 100
 max_memory = 3000
 batch_size = 512
@@ -56,10 +56,10 @@ if (env.train):
         new_month = np.random.randint(0, 12)
         env.reset(new_month = new_month)  
         game_over = False
-        current_state, _, _ = env.observe()
+        current_state, _, _ = env.observe() # En este paso se ajustarán los pesos de la red neuronal con el optimizador que definimos
         timestep = 0
         # INICIALIZACIÓN DEL BUCLE DE TIMESTEPS (Timestep = 1 minuto) EN UNA EPOCA
-        while ((not game_over) and (timestep <= 5*30*24*60)):
+        while ((not game_over) and (timestep <= 5*30*24*60)):   #podría que ejecutemos 5 meses o menos debido al game over. Suponemos que un mes tiene 30 días, cada dia con 24 hrs y cada hr 60 min.
             # EJECUTAR LA SIGUIENTE ACCIÓN POR EXPLORACIÓN
             if np.random.rand() <= epsilon:
                 action = np.random.randint(0, number_actions)
@@ -70,9 +70,11 @@ if (env.train):
                 action = np.argmax(q_values[0])
             
             if (action < direction_boundary):
-                direction = -1
+                direction = -1  # Ya que tendríamos que enfriar el servidor
             else:
-                direction = 1
+                direction = 1   # Ya que hay que calentar el servidor
+            # Nota el caso en que ni enfria ni calienta puede ir en cualquiera de los 2 ya action - direction_boundary
+            # sería igual a 0
             energy_ai = abs(action - direction_boundary) * temperature_step
             
             # ACTUALIZAR EL ENTORNO Y ALCANZAR EL SIGUIENTE ESTADO
@@ -86,6 +88,10 @@ if (env.train):
             inputs, targets = dqn.get_batch(model, batch_size)
             
             # CALCULAR LA FUNCIÓN DE PÉRDIDAS UTILIZANDO TODO EL BLOQUE DE ENTRADA Y OBJETIVOS
+            # Combinamos el gradiente descente estocástico con el gradiente descente por bloques. Esto
+            # para evitar que todas las observaciones se suministren en el mismo ordeny el otro para
+            # evitar problemas de overfitting. Ya que le sumintramos todo un bloque y posteriormente hacemos 
+            # propagación hacía atrás.
             loss += model.train_on_batch(inputs, targets)
             timestep += 1
             current_state = next_state

@@ -26,10 +26,11 @@ class Environment(object):
         self.current_number_users = initial_number_users
         self.initial_rate_data = initial_rate_data
         self.current_rate_data = initial_rate_data
+        # la siguiente varibale se calculó mediante una regresión multiple
         self.intrinsec_temperature = self.atmospheric_temperature + 1.25*self.current_number_users+1.25*self.current_rate_data
         self.temperature_ai = self.intrinsec_temperature
         self.temperature_noai = (self.optimal_temperature[0]+self.optimal_temperature[1])/2.0
-        self.total_energy_ai = 0.0
+        self.total_energy_ai = 0.0          # Variable del total de energia gastado con inteligencia artificial
         self.total_energy_noai = 0.0
         self.reward = 0.0
         self.game_over = 0
@@ -50,20 +51,23 @@ class Environment(object):
         
         # Calcular la recompensa
         self.reward = energy_noai - energy_ai
-        # Escalar la recompensa
+        # Escalar la recompensa: Ayuda a la convergencia del modelo.
         self.reward = 1e-3*self.reward
         
         # OBTENCIÓN DEL SIGUIENTE ESTADO
         
         # Actualizar la temperatura atmosférica
         self.atmospheric_temperature = self.monthly_atmospheric_temperature[month]
-        # Actualizar el número de usuarios
+        # Actualizar el número de usuarios: Actualmente generamos un número aleatorio basandonos en 
+        # max_update_users que es el valor máximo de usuarios que se pueden conectar en un minuto
+        # Pero en un servidor real se puede obtener el número real. Además hacemos la comporbación de 
+        # que el número de usuarios no puede ser menor a min_number_users ni mayor a max_number_users
         self.current_number_users += np.random.randint(-self.max_update_users, self.max_update_users)
         if(self.current_number_users < self.min_number_users):
             self.current_number_users = self.min_number_users
         elif(self.current_number_users > self.max_number_users):
             self.current_number_users = self.max_number_users
-        # Actualizar la tasa de transferencia de datos
+        # Actualizar la tasa de transferencia de datos. Ocurre de la misma manera que con el no. de usuarios
         self.current_rate_data += np.random.randint(-self.max_update_data, self.max_update_data)
         if(self.current_rate_data < self.min_rate_data):
             self.current_rate_data = self.min_rate_data
